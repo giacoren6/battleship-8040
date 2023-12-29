@@ -2,224 +2,84 @@
 # You can delete these comments, but do not change the name of this file
 # Write your code to expect a terminal of 80 characters wide and 24 rows high
 
-
-
-import gspread
-from google.oauth2.service_account import Credentials
-
-SCOPE = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive.file",
-    "https://www.googleapis.com/auth/drive"
-    ]
-
-CREDS = Credentials.from_service_account_file('creds.json')
-SCOPED_CREDS = CREDS.with_scopes(SCOPE)
-GSPREAD_CLIENT = gspread.authorize(SCOPED_CREDS)
-SHEET = GSPREAD_CLIENT.open('battleship-8040')
-
+#storyboard
+# x for taking the ship and hit battleship
+# ' ' for avalible space
+# '-' for missed shot
 
 
 from random import randint
-import os
 
-#Ship Class
-class Ship:
-  def __init__(self, size, orientation, location):
-    self.size = size
-    
-    if orientation == 'horizontal' or orientation == 'vertical':
-      self.orientation = orientation
+
+BOARD_GAME_HIDDEN = [[' '] * 9 for x in range(9)]
+GAME_GUESS_BOARD = [[' '] * 9 for x in range(9)]
+
+letter_for_number = {'A': 0, 'B' : 1, 'C' : 2, 'D' : 3, 'E' : 4, 'F' : 5, 'G' : 6, 'H' : 7, 'I' 8} 
+
+def print_board(board):
+    print('A B C D E F G H I')
+    print(' -------------------')
+    row_number = 1 
+
+    for row in board:
+        print("%d|%s|" % (row_number, "|".join(row)))
+        row_number += 1
+ 
+def ship_create(board):
+    for ship in range(6):
+        ship_row, ship_column = randint(0,8), randint(0,8)
+        while board[ship_row][ship_column] == 'X':
+            ship_row,ship_column = randint(0,8), randint(0,8)
+            board[ship_row][ship_column] = 'X'
+
+def get_ship_location():
+    row = input('Enter a ship row 1-9:' )
+    while row not in '1 2 3 4 5 6 7 8 9':
+        print('Enter a valid row')
+    row = input('Enter a ship row 1-9')
+    column = input('Enter a ship column  A-I:' ).upper()
+    while column not in 'ABCDEFGHI':
+            column = input('Enter a ship column  A-I:' ).upper()
+            return int(row) - 1  letter_for_number[column]
+
+
+
+
+
+
+def count_hit(board):
+    count = 0:
+    for row in board:
+    for column in row:
+    if column == 'X':
+        count += 1
+        return count
+
+
+
+ship_create(BOARD_GAME_HIDDEN)
+turns = 10
+while turns > 0:
+    print('Welcome to Battleship-8040')
+    print_board(GAME_GUESS_BOARD)
+    row, column = get_ship_location()
+    if GAME_GUESS_BOARD[row][column] == '-':
+    print('You already guess it ')
+    elif BOARD_GAME_HIDDEN[row][column] == 'X':
+        print('Contrats')
+        GAME_GUESS_BOARD[row][column] = 'X'
+        turns -= 1
     else:
-      raise ValueError("Value must be 'horizontal' or 'vertical'.")
-    
-    if orientation == 'horizontal':
-      if location['row'] in range(row_size):
-        self.coordinates = []
-        for index in range(size):
-          if location['col'] + index in range(col_size):
-            self.coordinates.append({'row': location['row'], 'col': location['col'] + index})
-          else:
-            raise IndexError("Column is out of range.")
-      else:
-        raise IndexError("Row is out of range.")
-    elif orientation == 'vertical':
-      if location['col'] in range(col_size):
-        self.coordinates = []
-        for index in range(size):
-          if location['row'] + index in range(row_size):
-            self.coordinates.append({'row': location['row'] + index, 'col': location['col']})
-          else:
-            raise IndexError("Row is out of range.")
-      else:
-        raise IndexError("Column is out of range.")
-
-    if self.filled():
-      print_board(board)
-      print(" ".join(str(coords) for coords in self.coordinates))
-      raise IndexError("A ship already occupies that space.")
-    else:
-      self.fillBoard()
-  
-  def filled(self):
-    for coords in self.coordinates:
-      if board[coords['row']][coords['col']] == 1:
-        return True
-    return False
-  
-  def fillBoard(self):
-    for coords in self.coordinates:
-      board[coords['row']][coords['col']] = 1
-
-  def contains(self, location):
-    for coords in self.coordinates:
-      if coords == location:
-        return True
-    return False
-  
-  def destroyed(self):
-    for coords in self.coordinates:
-      if board_display[coords['row']][coords['col']] == 'O':
-        return False
-      elif board_display[coords['row']][coords['col']] == '*':
-        raise RuntimeError("Board display inaccurate")
-    return True
-
-  
-#Settings Variables
-row_size = 9 #number of rows
-col_size = 9 #number of columns
-num_ships = 4
-max_ship_size = 5
-min_ship_size = 2
-num_turns = 40
-
-#Create lists
-ship_list = []
-
-board = [[0] * col_size for x in range(row_size)]
-
-board_display = [["O"] * col_size for x in range(row_size)]
-
-#Functions
-def print_board(board_array):
-  print("\n  " + " ".join(str(x) for x in range(1, col_size + 1)))
-  for r in range(row_size):
-    print(str(r + 1) + " " + " ".join(str(c) for c in board_array[r]))
-  print()
-
-def search_locations(size, orientation):
-  locations = []
-
-  if orientation != 'horizontal' and orientation != 'vertical':
-    raise ValueError("Orientation must have a value of either 'horizontal' or 'vertical'.")
-
-  if orientation == 'horizontal':
-    if size <= col_size:
-      for r in range(row_size):
-        for c in range(col_size - size + 1):
-          if 1 not in board[r][c:c+size]:
-            locations.append({'row': r, 'col': c})
-  elif orientation == 'vertical':
-    if size <= row_size:
-      for c in range(col_size):
-        for r in range(row_size - size + 1):
-          if 1 not in [board[i][c] for i in range(r, r+size)]:
-            locations.append({'row': r, 'col': c})
-
-  if not locations:
-    return 'None'
-  else:
-    return locations
-
-def random_location():
-  size = randint(min_ship_size, max_ship_size)
-  orientation = 'horizontal' if randint(0, 1) == 0 else 'vertical'
-
-  locations = search_locations(size, orientation)
-  if locations == 'None':
-    return 'None'
-  else:
-    return {'location': locations[randint(0, len(locations) - 1)], 'size': size,\
-     'orientation': orientation}
-
-def get_row():
-  while True:
-    try:
-      guess = int(input("Row Guess: "))
-      if guess in range(1, row_size + 1):
-        return guess - 1
-      else:
-        print("\nOops, that's not even in the ocean.")
-    except ValueError:
-      print("\nPlease enter a number")
-
-def get_col():
-  while True:
-    try:
-      guess = int(input("Column Guess: "))
-      if guess in range(1, col_size + 1):
-        return guess - 1
-      else:
-        print("\nOops, that's not even in the ocean.")
-    except ValueError:
-      print("\nPlease enter a number")
-
-# Create the ships
-
-temp = 0
-while temp < num_ships:
-  ship_info = random_location()
-  if ship_info == 'None':
-    continue
-  else:
-    ship_list.append(Ship(ship_info['size'], ship_info['orientation'], ship_info['location']))
-    temp += 1
-del temp
-
-# Play Game
-os.system('clear')
-print_board(board_display)
-
-for turn in range(num_turns):
-  print("Turn:", turn + 1, "of", num_turns)
-  print("Ships left:", len(ship_list))
-  print()
-  
-  guess_coords = {}
-  while True:
-    guess_coords['row'] = get_row()
-    guess_coords['col'] = get_col()
-    if board_display[guess_coords['row']][guess_coords['col']] == 'X' or \
-     board_display[guess_coords['row']][guess_coords['col']] == '*':
-      print("\nYou guessed that one already.")
-    else:
-      break
-
-  os.system('clear')
-
-  ship_hit = False
-  for ship in ship_list:
-    if ship.contains(guess_coords):
-      print("Hit!")
-      ship_hit = True
-      board_display[guess_coords['row']][guess_coords['col']] = 'X'
-      if ship.destroyed():
-        print("Ship Destroyed!")
-        ship_list.remove(ship)
-      break
-  if not ship_hit:
-    board_display[guess_coords['row']][guess_coords['col']] = '*'
-    print("You missed!")
-
-  print_board(board_display)
-  
-  if not ship_list:
+        print('You Missed')
+        GAME_GUESS_BOARD[row][column] '-':
+        turns -= 1
+    if count_hit(GAME_GUESS_BOARD) == 6:
+        print('Congrats You Win !!!')
+        break
+    print('You have' + str(turns) + 'Remaining turns')
+    if turns = 0:
+    print('Game Over')
     break
+    
 
-# End Game
-if ship_list:
-  print("You lose!")
-else:
-  print("All the ships are sunk. You win!")
 
